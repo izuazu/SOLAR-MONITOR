@@ -1,16 +1,20 @@
 body {
     background-color: #f0f8ff; /* Light Blue Background */
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #212529; /* Default text color for the body */
 }
 
 .navbar-brand, .nav-link {
     font-weight: 500;
+    color: #fff; /* Ensure navbar text is always white */
 }
 
 .card {
     box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.08);
     border: none;
     transition: transform 0.2s ease-in-out;
+    background-color: #fff; /* Ensure card has a background */
+    color: #212529; /* Default text color on the card */
 }
 
 .card:hover {
@@ -43,28 +47,39 @@ body {
 .footer {
     background-color: #e9ecef;
     border-top: 1px solid #dee2e6;
+    color: #212529;  /* Ensure text color is visible in light mode */
 }
 
 /* Dark Mode */
 body.dark-mode {
-  background-color: #222;
-  color: #fff;
+  background-color: #343a40; /* Dark Gray Background - A bit lighter than before */
+  color: #fff; /* Very Light Gray Text - Almost White */
+}
+
+body.dark-mode .navbar-brand,
+body.dark-mode .nav-link {
+    color: #fff; /* Keep navbar text white in dark mode */
 }
 
 body.dark-mode .card {
-  background-color: #333;
-  color: #eee;
+  background-color: #495057; /* Slightly Lighter Dark Card */
+  color: #fff; /* Use the same white for card text */
 }
 
 body.dark-mode .card-title {
   color: #fff;
 }
 
+body.dark-mode .card-text {
+    color: #fff; /* White for the main card text */
+}
+
 body.dark-mode .card-subtitle {
-  color: #ccc;
+  color: #ddd; /* A lighter gray for subtitles, but closer to white */
 }
 
 body.dark-mode .footer {
-  background-color: #333;
-  border-top-color: #444;
+  background-color: #343a40;  /* Match dark mode background */
+  border-top-color: #6c757d;  /* A slightly lighter border */
+  color: #fff; /* Ensure text color is white in dark mode */
 }
