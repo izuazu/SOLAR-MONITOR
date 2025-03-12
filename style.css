@@ -81,5 +81,5 @@ body.dark-mode .card-subtitle {
 body.dark-mode .footer {
   background-color: #343a40;  /* Match dark mode background */
   border-top-color: #6c757d;  /* A slightly lighter border */
-  color: #fff; /* Ensure text color is white in dark mode */
+  color: #ede0e0; /* Ensure text color is white in dark mode */
 }
