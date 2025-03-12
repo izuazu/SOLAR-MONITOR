@@ -3,17 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitoring Energi Panel Surya</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <title>Solaris Monitoring</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+
+    <!-- Custom Styles -->
     <link rel="stylesheet" href="style.css">
+
+    <!-- Chart.js library -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+          integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer"/>
 </head>
 <body>
 
+    <!-- Navigation Bar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
-            <a class="navbar-brand" href="#"><i class="fas fa-solar-panel me-2"></i> SolarMonitor</a>
+            <a class="navbar-brand" href="#"><i class="fas fa-solar-panel me-2"></i> Solaris Monitor</a>
             <div class="ms-auto">
                 <a class="nav-link" href="#" id="theme-toggle">
                     <i class="fas fa-sun" id="theme-icon"></i>
@@ -22,53 +33,59 @@
         </div>
     </nav>
 
+    <!-- Main Content -->
     <div class="container mt-3">
+
+        <!-- Realtime Data Row 1 -->
         <div class="row">
             <div class="col-md-6 mb-3">
                 <div class="card h-100">
                     <div class="card-body">
-                        <h5 class="card-title"><i class="fas fa-sun me-2"></i> Daya Dihasilkan</h5>
-                        <h2 class="card-text" id="realtime-generated">-- kW</h2>
-                        <p class="card-subtitle text-muted">Saat ini</p>
+                        <h5 class="card-title"><i class="fas fa-sun me-2"></i> Power Generated</h5>
+                        <h2 class="card-text" id="realtime-generated">-- W</h2>
+                        <p class="card-subtitle text-muted">Currently</p>
                     </div>
                 </div>
             </div>
             <div class="col-md-6 mb-3">
                 <div class="card h-100">
                     <div class="card-body">
-                        <h5 class="card-title"><i class="fas fa-bolt me-2"></i> Daya Dikonsumsi</h5>
-                        <h2 class="card-text" id="realtime-consumed">-- kW</h2>
-                        <p class="card-subtitle text-muted">Saat ini</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="fas fa-charging-station me-2"></i> Ampere</h5>
-                        <h2 class="card-text" id="realtime-ampere">-- A</h2>
-                        <p class="card-subtitle text-muted">Sensor</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6 mb-3">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="fas fa-charging-station me-2"></i> Voltage</h5>
-                        <h2 class="card-text" id="realtime-voltage">-- V</h2>
-                        <p class="card-subtitle text-muted">Sensor</p>
+                        <h5 class="card-title"><i class="fas fa-bolt me-2"></i> Power Output (Inverter)</h5>
+                        <h2 class="card-text" id="realtime-consumed">-- VAC</h2>
+                        <p class="card-subtitle text-muted">Outlet Terminal</p>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- Realtime Data Row 2 -->
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="fas fa-charging-station me-2"></i> Ampere (Output)</h5>
+                        <h2 class="card-text" id="realtime-ampere">-- A</h2>
+                        <p class="card-subtitle text-muted">Output Charger Box</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="fas fa-charging-station me-2"></i> Voltage (Output)</h5>
+                        <h2 class="card-text" id="realtime-voltage">-- VDC</h2>
+                        <p class="card-subtitle text-muted">Output USB Charger</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart and Statistics Row -->
         <div class="row">
             <div class="col-md-8 mb-3">
                 <div class="card h-100">
                     <div class="card-body">
-                        <h5 class="card-title"><i class="fas fa-chart-area me-2"></i> Grafik Daya</h5>
+                        <h5 class="card-title"><i class="fas fa-chart-area me-2"></i> Power Chart</h5>
                         <canvas id="hourly-chart"></canvas>
                     </div>
                 </div>
@@ -76,23 +93,30 @@
             <div class="col-md-4 mb-3">
                 <div class="card h-100">
                     <div class="card-body">
-                        <h5 class="card-title"><i class="fas fa-chart-pie me-2"></i> Statistik Harian</h5>
-                        <p><i class="fas fa-solar-panel me-1"></i> Total Dihasilkan: <span id="daily-total-generated">-- kWh</span></p>
-                        <p><i class="fas fa-home me-1"></i> Total Dikonsumsi: <span id="daily-total-consumed">-- kWh</span></p>
-                        <p><i class="fas fa-check-circle me-1"></i> Swasembada Energi: <span id="daily-self-sufficiency">-- %</span></p>
+                        <h5 class="card-title"><i class="fas fa-chart-pie me-2"></i> Daily Statistics</h5>
+                        <p><i class="fas fa-solar-panel me-1"></i> Total Generated: <span id="daily-total-generated">-- Wh</span></p>
+                        <p><i class="fas fa-plug me-1"></i> Charger Box Output: <span id="daily-total-consumed">-- VAC</span></p>
+                        <div id="daily-self-sufficiency">Sensor Readings:</div>
                     </div>
                 </div>
             </div>
         </div>
+
     </div>
 
+    <!-- Footer -->
     <footer class="footer mt-auto py-3 bg-light">
         <div class="container text-center">
-            <span class="text-muted">© 2025 Monitoring Energi Panel Surya</span>
+            <span class="text-muted">© 2025 Solar Panel Energy Monitoring</span>
         </div>
     </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+    <!-- Bootstrap JavaScript Bundle (Popper included) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+
+    <!-- Custom JavaScript -->
     <script src="script.js"></script>
+
 </body>
 </html>

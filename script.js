@@ -3,8 +3,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let now = new Date();
     let currentHour = now.getHours();
     let currentMinute = now.getMinutes();
-    let totalGeneratedToday = 0;
-    let totalConsumedToday = 0;
     let isDarkMode = localStorage.getItem('darkMode') === 'enabled';
 
     if (isDarkMode) {
@@ -13,93 +11,60 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('theme-icon').classList.add('fa-moon');
     }
 
+    // Accumulators
     let generatedThisMinute = 0;
-    let consumedThisMinute = 0;
+    let inverterOutputThisMinute = 0;
+    let totalAmpereThisMinute = 0;
+    let totalVoltageThisMinute = 0;
 
     function generateDummyData() {
         let generated = 0;
-        let consumed = 0;
-        let baseConsumption = 0.1;
-        let solarFactor = 0;
+        let inverterOutput = 0;
         let ampere = 0;
         let voltage = 0;
 
-        // Get current date and time
         const now = new Date();
         const hour = now.getHours();
-        const month = now.getMonth(); // Month (0-11)
-        const day = now.getDate(); // Day of the month (1-31)
+        const month = now.getMonth();
+        const day = now.getDate();
 
-        // Latitude and Longitude of ITERA, Lampung
-        const latitude = -5.3768; // Approximate Latitude
-        const longitude = 105.3166; // Approximate Longitude
+        const latitude = -5.3768;
+        const longitude = 105.3166;
 
-        // Function to calculate the Sun's position (simplified)
         function calculateSunPosition(latitude, longitude, year, month, day, hour) {
-            // Simplified calculations. For a more accurate implementation,
-            // use a dedicated library like 'suncalc' or a more detailed algorithm.
-
-            // Approximate Declination of the Sun (degrees)
             const declination = 23.45 * Math.cos((360 / 365) * (day + 10));
-
-            // Hour Angle (degrees)
             const hourAngle = 15 * (hour - 12);
-
-            // Solar Altitude (degrees)
             const solarAltitude = Math.asin(
                 Math.sin(latitude * Math.PI / 180) * Math.sin(declination * Math.PI / 180) +
                 Math.cos(latitude * Math.PI / 180) * Math.cos(declination * Math.PI / 180) * Math.cos(hourAngle * Math.PI / 180)
             ) * 180 / Math.PI;
-
-            // Azimuth (simplified)
-            const azimuth = 180 + hourAngle; // Rough approximation. Use a proper calculation for accuracy.
-
+            const azimuth = 180 + hourAngle;
             return { altitude: solarAltitude, azimuth: azimuth };
         }
 
         const sunPosition = calculateSunPosition(latitude, longitude, now.getFullYear(), month + 1, day, hour);
         const solarAltitude = sunPosition.altitude;
+        const cloudCover = Math.random();
+        const maxGenerationPotential = 420;
 
-        // Cloud cover factor (simulates varying weather)
-        const cloudCover = Math.random(); // Random value between 0 and 1 (0 = clear, 1 = overcast)
-
-        // Potential maximum generation (adjust based on panel capacity and local irradiance)
-        const maxGenerationPotential = 1.8; // kW - Adjusted for Lampung's potential
-
-        if (solarAltitude > 0) {  // Sun is above the horizon
-
-            // Solar intensity based on sun altitude and cloud cover
-            let solarIntensity = Math.max(0, Math.sin(solarAltitude * Math.PI / 180)); // Solar altitude determines intensity
-
-            // Apply cloud cover to solar intensity
+        if (solarAltitude > 0) {
+            let solarIntensity = Math.max(0, Math.sin(solarAltitude * Math.PI / 180));
             solarIntensity *= (1 - cloudCover);
-
             generated = maxGenerationPotential * solarIntensity;
             generated = Math.max(0, generated);
-
-            // Realistic values (adjust these as needed) - Increased Ampere and Voltage
-            ampere = Math.random() * 8 + 4; // Increased range
-            voltage = Math.random() * 6 + 20; //Increased Voltage
-
+            ampere = Math.random() * 0.5 + 0.2;
+            voltage = Math.random() * 1 + 4.5;
+            inverterOutput = 217 + Math.random() * 2;
         } else {
-            // Night time - minimal generation
-            generated = 0.005 + Math.random() * 0.01;  // Minimal "leakage" or standby power
-            ampere = Math.random() * 0.2;
-            voltage = Math.random() * 0.5 + 16;
+            generated = 0.05 + Math.random() * 0.1;
+            ampere = Math.random() * 0.05;
+            voltage = Math.random() * 0.2 + 4.3;
+            inverterOutput = 216 + Math.random() * 1;
         }
-
-        // Base consumption adjusted for ITERA's possible usage
-        baseConsumption = 0.15;
-
-        consumed = baseConsumption + Math.random() * 0.4 + solarFactor; // Higher consumption range
-        consumed = Math.max(consumed, 0.1);  // Minimum consumption
-
-        //Solar factor can reduce consumption (if generating more than consuming)
-        solarFactor = Math.min(generated, consumed) * 0.2; // Use up to 20% of generated power to offset
 
         return {
             generated: generated,
-            consumed: consumed,
+            inverterOutput: inverterOutput,
             ampere: ampere,
             voltage: voltage
         };
@@ -108,26 +73,33 @@ document.addEventListener('DOMContentLoaded', () => {
     function createInitialHourlyData() {
         const now = new Date();
         const currentHour = now.getHours();
-        const currentMinute = now.getMinutes();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
         if (hourlyData.length === 0) {
-            for (let i = 0; i <= currentHour; i++) {
-                for (let j = 0; j < 60; j++) {
-                    if (i === currentHour && j > currentMinute) break;
+             for (let i = 0; i <= currentHour; i++) {
+                for (let j = 0; j < 60; j += 30) { // Step of 30 minutes
+                    const itemDate = new Date(today);
+                    itemDate.setHours(i, j, 0, 0); // Set to i-th hour, j-th minute
 
-                    let generatedSum = 0;
-                    let consumedSum = 0;
-
-                    const data = generateDummyData();
-                    generatedSum += data.generated;
-                    consumedSum += data.consumed;
-
-                    hourlyData.push({
-                        hour: i,
-                        minute: j,
-                        generated: generatedSum,
-                        consumed: consumedSum
-                    });
+                    if (itemDate <= now) {
+                        const data = generateDummyData();
+                        hourlyData.push({
+                            timestamp: itemDate.getTime(),
+                            generated: data.generated,
+                            inverterOutput: data.inverterOutput,
+                            ampere: data.ampere,
+                            voltage: data.voltage
+                        });
+                    } else {
+                        hourlyData.push({
+                            timestamp: itemDate.getTime(),
+                            generated: 0,
+                            inverterOutput: 0,
+                            ampere: 0,
+                            voltage: 0
+                        });
+                    }
                 }
             }
             localStorage.setItem('hourlyData', JSON.stringify(hourlyData));
@@ -136,68 +108,101 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateDisplay() {
         let data = generateDummyData();
-        generatedThisMinute += data.generated;
-        consumedThisMinute += data.consumed;
 
-        document.getElementById('realtime-generated').textContent = data.generated.toFixed(2) + ' kW';
-        document.getElementById('realtime-consumed').textContent = data.consumed.toFixed(2) + ' kW';
+        generatedThisMinute += data.generated;
+        inverterOutputThisMinute += data.inverterOutput;
+        totalAmpereThisMinute += data.ampere;
+        totalVoltageThisMinute += data.voltage;
+
+        document.getElementById('realtime-generated').textContent = data.generated.toFixed(2) + ' W';
+        document.getElementById('realtime-consumed').textContent = data.inverterOutput.toFixed(2) + ' VAC';
         document.getElementById('realtime-ampere').textContent = data.ampere.toFixed(2) + ' A';
-        document.getElementById('realtime-voltage').textContent = data.voltage.toFixed(2) + ' V';
+        document.getElementById('realtime-voltage').textContent = data.voltage.toFixed(2) + ' VDC';
     }
 
     function updateHourlyData() {
         const now = new Date();
-        currentHour = now.getHours();
-        currentMinute = now.getMinutes();
+        const currentHour = now.getHours();
+        const currentMinute = now.getMinutes(); // Get current minute
 
-        const newHourlyData = {
-            hour: currentHour,
-            minute: currentMinute,
-            generated: generatedThisMinute,
-            consumed: consumedThisMinute
-        };
-
-        // Check if the data for this minute already exists
-        let indexData = hourlyData.findIndex(item => item.hour === currentHour && item.minute === currentMinute);
+        const itemDate = new Date();
+        itemDate.setHours(currentHour, currentMinute - (currentMinute % 30), 0, 0); // Round to nearest 30 minutes
+        console.log("itemDate " + itemDate);
+        let indexData = hourlyData.findIndex(item => item.timestamp === itemDate.getTime());
 
         if (indexData !== -1) {
-            // Update existing data by adding the new values
-            hourlyData[indexData].generated += newHourlyData.generated;
-            hourlyData[indexData].consumed += newHourlyData.consumed;
+            // Update existing data
+            hourlyData[indexData].generated = generatedThisMinute;
+            hourlyData[indexData].inverterOutput = inverterOutputThisMinute;
+            hourlyData[indexData].ampere = totalAmpereThisMinute;
+            hourlyData[indexData].voltage = totalVoltageThisMinute;
         } else {
-            // Add new data
-            hourlyData.push(newHourlyData);
+            // Add new data if it doesn't exist
+            hourlyData.push({
+                timestamp: itemDate.getTime(),
+                generated: generatedThisMinute,
+                inverterOutput: inverterOutputThisMinute,
+                ampere: totalAmpereThisMinute,
+                voltage: totalVoltageThisMinute
+            });
         }
 
-        // Filter out data from previous days. This is crucial for keeping the data relevant and the chart clean.
-        const today = new Date();
-        today.setHours(0, 0, 0, 0); // Start of today
-        hourlyData = hourlyData.filter(item => {
-            const itemDate = new Date(today); // Create a new date object initialized to the start of today.
-            itemDate.setHours(item.hour, item.minute, 0, 0);  // Set the hours and minutes based on the data item.
-
-            return itemDate <= now; // Keep data that is up to the current time today.
-        });
+        // Reset accumulators
+        generatedThisMinute = 0;
+        inverterOutputThisMinute = 0;
+        totalAmpereThisMinute = 0;
+        totalVoltageThisMinute = 0;
 
         localStorage.setItem('hourlyData', JSON.stringify(hourlyData));
         updateChart();
-
-        generatedThisMinute = 0;
-        consumedThisMinute = 0;
     }
 
-    function updateDailyStats() {
-        totalGeneratedToday = hourlyData.reduce((sum, item) => sum + item.generated, 0);
-        totalConsumedToday = hourlyData.reduce((sum, item) => sum + item.consumed, 0);
-        document.getElementById('daily-total-generated').textContent = totalGeneratedToday.toFixed(2) + ' kWh';
-        document.getElementById('daily-total-consumed').textContent = totalConsumedToday.toFixed(2) + ' kWh';
 
-        let selfSufficiency = (totalConsumedToday > 0) ? (Math.min(totalGeneratedToday, totalConsumedToday) / totalConsumedToday) * 100 : 0;
-        document.getElementById('daily-self-sufficiency').textContent = selfSufficiency.toFixed(0) + ' %';
-    }
+   function updateDailyStats() {
+        // Reset accumulators for Daily Stats
+        let totalGeneratedToday = 0;
+        let totalInverterOutputToday = 0;
+        let totalAmpere = 0;
+        let totalVoltage = 0;
+        let numReadings = 0;
+
+        // Iterate through hourly data, sum values, and count readings
+        for (let i = 0; i < hourlyData.length; i++) {
+            const itemDate = new Date(hourlyData[i].timestamp);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);  // Set today to midnight
+
+            if (itemDate >= today) {  // Only process data from today
+                totalGeneratedToday += hourlyData[i].generated;
+                totalInverterOutputToday += hourlyData[i].inverterOutput;
+                totalAmpere += hourlyData[i].ampere;
+                totalVoltage += hourlyData[i].voltage;
+                numReadings++;
+            }
+        }
+
+        // Calculate averages - Guard against division by zero
+        let avgAmpere = numReadings > 0 ? totalAmpere / numReadings : 0;
+        let avgVoltage = numReadings > 0 ? totalVoltage / numReadings : 0;
+        let avgInverterOutput = numReadings > 0 ? totalInverterOutputToday / numReadings : 0;
+
+        // Update Daily Statistics Display - Make sure numbers are valid
+        document.getElementById('daily-total-generated').textContent = totalGeneratedToday.toFixed(2) + ' Wh';
+        document.getElementById('daily-total-consumed').textContent = avgInverterOutput.toFixed(2) + ' VAC'; // Ensure calculations are correct
+
+        const dailyStatsElement = document.getElementById('daily-self-sufficiency');
+        dailyStatsElement.innerHTML = 'Sensor Readings:<br>';
+        dailyStatsElement.innerHTML += `<i class="fas fa-bolt me-1"></i> Avg Ampere: ${avgAmpere.toFixed(2)} A<br>`;
+        dailyStatsElement.innerHTML += `<i class="fas fa-bolt me-1"></i> Avg Voltage: ${avgVoltage.toFixed(2)} VDC`;
+
+            // Debugging - Add console logs here:
+            console.log('totalGeneratedToday:', totalGeneratedToday);
+            console.log('totalInverterOutputToday:', totalInverterOutputToday);
+            console.log('numReadings:', numReadings);
+            console.log('avgInverterOutput:', avgInverterOutput);
+        }
 
     let hourlyChart;
-
     function updateChart() {
         const ctx = document.getElementById('hourly-chart').getContext('2d');
 
@@ -208,28 +213,32 @@ document.addEventListener('DOMContentLoaded', () => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        const labels = hourlyData.map(item => {
-            const itemDate = new Date(today);
-            itemDate.setHours(item.hour, item.minute);
-            const hour = String(item.hour).padStart(2, '0');
-            const minute = String(item.minute).padStart(2, '0');
-            return `${hour}:${minute}`;
+        const chartData = hourlyData.filter(item => {
+            const itemDate = new Date(item.timestamp);
+            return itemDate >= today && itemDate <= now;
         });
 
+         const labels = chartData.map(item => {
+            const itemDate = new Date(item.timestamp);
+            const hour = String(itemDate.getHours()).padStart(2, '0');
+            const minute = String(itemDate.getMinutes()).padStart(2, '0');
+            return `${hour}:${minute}`; // Display hour and minute
+        });
 
         hourlyChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'Dihasilkan',
-                    data: hourlyData.map(item => item.generated),
+                    label: 'Generated (W)',
+                    data: chartData.map(item => item.generated),
                     borderColor: 'rgba(75, 192, 192, 1)',
                     backgroundColor: 'rgba(75, 192, 192, 0.2)',
                     fill: false
-                }, {
-                    label: 'Dikonsumsi',
-                    data: hourlyData.map(item => item.consumed),
+                },
+                {
+                    label: 'Inverter Output (VAC)',
+                    data: chartData.map(item => item.inverterOutput),
                     borderColor: 'rgba(255, 99, 132, 1)',
                     backgroundColor: 'rgba(255, 99, 132, 0.2)',
                     fill: false
@@ -240,13 +249,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     x: {
                         title: {
                             display: true,
-                            text: 'Waktu'
+                            text: 'Time'
+                        },
+                        ticks: {
+                            autoSkip: false,
+                            maxRotation: 90,
+                            minRotation: 90
                         }
                     },
                     y: {
                         title: {
                             display: true,
-                            text: 'kW'
+                            text: 'Value'
                         }
                     }
                 }
@@ -255,25 +269,25 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function checkNewHour() {
-        let now = new Date();
-        let newHour = now.getHours();
-        let newMinute = now.getMinutes();
+        const now = new Date();
+        const newHour = now.getHours();
+        const newMinute = now.getMinutes();
 
-        if (newHour !== currentHour || newMinute !== currentMinute) {
+        if (newMinute % 30 === 0 && newMinute !== currentMinute) { // Check if new 30-minute interval
             updateHourlyData();
             updateDailyStats();
             currentHour = newHour;
             currentMinute = newMinute;
+
         }
     }
 
-    createInitialHourlyData()
+    createInitialHourlyData();
     updateChart();
-    updateDailyStats()
+    updateDailyStats();
 
     setInterval(updateDisplay, 5000);
-
-    setInterval(checkNewHour, 60000); // Update every minute
+    setInterval(checkNewHour, 60000);
 
     document.getElementById('theme-toggle').addEventListener('click', function(e) {
         e.preventDefault();
@@ -289,5 +303,4 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('darkMode', 'enabled');
         }
     });
-
 });
