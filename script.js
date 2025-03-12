@@ -70,19 +70,48 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    function createInitialHourlyData() {
+   function createInitialHourlyData() {
         const now = new Date();
         const currentHour = now.getHours();
+        const currentMinute = now.getMinutes();
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
         if (hourlyData.length === 0) {
-             for (let i = 0; i <= currentHour; i++) {
-                for (let j = 0; j < 60; j += 30) { // Step of 30 minutes
+            for (let i = 0; i < 24; i++) {
+                for (let j = 0; j < 60; j += 30) {
                     const itemDate = new Date(today);
-                    itemDate.setHours(i, j, 0, 0); // Set to i-th hour, j-th minute
+                    itemDate.setHours(i, j, 0, 0);
+                   if (itemDate <= now) {
+                      const data = generateDummyData();
 
-                    if (itemDate <= now) {
+                      hourlyData.push({
+                          timestamp: itemDate.getTime(),
+                          generated: data.generated,
+                          inverterOutput: data.inverterOutput,
+                          ampere: data.ampere,
+                          voltage: data.voltage
+                      });
+                  } else {
+                       hourlyData.push({
+                          timestamp: itemDate.getTime(),
+                          generated: 0,
+                          inverterOutput: 0,
+                          ampere: 0,
+                          voltage: 0
+                      });
+                  }
+                }
+            }
+            localStorage.setItem('hourlyData', JSON.stringify(hourlyData));
+        } else {
+            for (let i = 0; i <= currentHour; i++) {
+                for (let j = 0; j < 60; j += 30) {
+
+                    const itemDate = new Date(today);
+                    itemDate.setHours(i, j, 0, 0);
+
+                    if (!hourlyData.find(item => item.timestamp === itemDate.getTime())) {
                         const data = generateDummyData();
                         hourlyData.push({
                             timestamp: itemDate.getTime(),
@@ -91,19 +120,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             ampere: data.ampere,
                             voltage: data.voltage
                         });
-                    } else {
-                        hourlyData.push({
-                            timestamp: itemDate.getTime(),
-                            generated: 0,
-                            inverterOutput: 0,
-                            ampere: 0,
-                            voltage: 0
-                        });
                     }
                 }
             }
-            localStorage.setItem('hourlyData', JSON.stringify(hourlyData));
         }
+        localStorage.setItem('hourlyData', JSON.stringify(hourlyData));
     }
 
     function updateDisplay() {
@@ -122,88 +143,89 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateHourlyData() {
         const now = new Date();
-        const currentHour = now.getHours();
-        const currentMinute = now.getMinutes(); // Get current minute
+        currentHour = now.getHours();
+        currentMinute = now.getMinutes();
 
-        const itemDate = new Date();
-        itemDate.setHours(currentHour, currentMinute - (currentMinute % 30), 0, 0); // Round to nearest 30 minutes
-        console.log("itemDate " + itemDate);
-        let indexData = hourlyData.findIndex(item => item.timestamp === itemDate.getTime());
+        // Update the data every 30 minutes
+        if (currentMinute % 30 === 0) {
+             const itemDate = new Date();
+             itemDate.setHours(currentHour, currentMinute, 0, 0);
 
-        if (indexData !== -1) {
-            // Update existing data
-            hourlyData[indexData].generated = generatedThisMinute;
-            hourlyData[indexData].inverterOutput = inverterOutputThisMinute;
-            hourlyData[indexData].ampere = totalAmpereThisMinute;
-            hourlyData[indexData].voltage = totalVoltageThisMinute;
-        } else {
-            // Add new data if it doesn't exist
-            hourlyData.push({
-                timestamp: itemDate.getTime(),
-                generated: generatedThisMinute,
-                inverterOutput: inverterOutputThisMinute,
-                ampere: totalAmpereThisMinute,
-                voltage: totalVoltageThisMinute
-            });
+             let indexData = hourlyData.findIndex(item => item.timestamp === itemDate.getTime());
+
+             if (indexData !== -1) {
+               hourlyData[indexData].generated = generatedThisMinute;
+               hourlyData[indexData].inverterOutput = inverterOutputThisMinute;
+               hourlyData[indexData].ampere = totalAmpereThisMinute;
+               hourlyData[indexData].voltage = totalVoltageThisMinute;
+
+            } else {
+                  hourlyData.push({
+                            timestamp: itemDate.getTime(),
+                            generated: generatedThisMinute,
+                            inverterOutput: inverterOutputThisMinute,
+                            ampere: totalAmpereThisMinute,
+                            voltage: totalVoltageThisMinute
+                  });
+            }
+            // Reset accumulators
+            generatedThisMinute = 0;
+            inverterOutputThisMinute = 0;
+            totalAmpereThisMinute = 0;
+            totalVoltageThisMinute = 0;
         }
 
-        // Reset accumulators
-        generatedThisMinute = 0;
-        inverterOutputThisMinute = 0;
-        totalAmpereThisMinute = 0;
-        totalVoltageThisMinute = 0;
-
+        // Persist and update chart if data is changed
         localStorage.setItem('hourlyData', JSON.stringify(hourlyData));
         updateChart();
     }
 
-
    function updateDailyStats() {
-        // Reset accumulators for Daily Stats
-        let totalGeneratedToday = 0;
-        let totalInverterOutputToday = 0;
-        let totalAmpere = 0;
-        let totalVoltage = 0;
-        let numReadings = 0;
+    // Reset accumulators for Daily Stats
+    let totalGeneratedToday = 0;
+    let totalInverterOutputToday = 0;
+    let totalAmpere = 0;
+    let totalVoltage = 0;
+    let numReadings = 0;
 
-        // Iterate through hourly data, sum values, and count readings
-        for (let i = 0; i < hourlyData.length; i++) {
-            const itemDate = new Date(hourlyData[i].timestamp);
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);  // Set today to midnight
+    // Iterate through hourly data, sum values, and count readings
+    for (let i = 0; i < hourlyData.length; i++) {
+        const itemDate = new Date(hourlyData[i].timestamp);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);  // Set today to midnight
 
-            if (itemDate >= today) {  // Only process data from today
-                totalGeneratedToday += hourlyData[i].generated;
-                totalInverterOutputToday += hourlyData[i].inverterOutput;
-                totalAmpere += hourlyData[i].ampere;
-                totalVoltage += hourlyData[i].voltage;
-                numReadings++;
-            }
+        if (itemDate >= today) {  // Only process data from today
+            totalGeneratedToday += hourlyData[i].generated;
+            totalInverterOutputToday += hourlyData[i].inverterOutput;
+            totalAmpere += hourlyData[i].ampere;
+            totalVoltage += hourlyData[i].voltage;
+            numReadings++;
         }
+    }
 
-        // Calculate averages - Guard against division by zero
-        let avgAmpere = numReadings > 0 ? totalAmpere / numReadings : 0;
-        let avgVoltage = numReadings > 0 ? totalVoltage / numReadings : 0;
-        let avgInverterOutput = numReadings > 0 ? totalInverterOutputToday / numReadings : 0;
+    // Calculate averages - Guard against division by zero
+    let avgAmpere = numReadings > 0 ? totalAmpere / numReadings : 0;
+    let avgVoltage = numReadings > 0 ? totalVoltage / numReadings : 0;
+    let avgInverterOutput = numReadings > 0 ? totalInverterOutputToday / numReadings : 0;
 
-        // Update Daily Statistics Display - Make sure numbers are valid
-        document.getElementById('daily-total-generated').textContent = totalGeneratedToday.toFixed(2) + ' Wh';
-        document.getElementById('daily-total-consumed').textContent = avgInverterOutput.toFixed(2) + ' VAC'; // Ensure calculations are correct
+    // Update Daily Statistics Display - Make sure numbers are valid
+    document.getElementById('daily-total-generated').textContent = totalGeneratedToday.toFixed(2) + ' Wh';
+    document.getElementById('daily-total-consumed').textContent = avgInverterOutput.toFixed(2) + ' VAC'; // Ensure calculations are correct
 
-        const dailyStatsElement = document.getElementById('daily-self-sufficiency');
-        dailyStatsElement.innerHTML = 'Sensor Readings:<br>';
-        dailyStatsElement.innerHTML += `<i class="fas fa-bolt me-1"></i> Avg Ampere: ${avgAmpere.toFixed(2)} A<br>`;
-        dailyStatsElement.innerHTML += `<i class="fas fa-bolt me-1"></i> Avg Voltage: ${avgVoltage.toFixed(2)} VDC`;
+    const dailyStatsElement = document.getElementById('daily-self-sufficiency');
+    dailyStatsElement.innerHTML = 'Sensor Readings:<br>';
+    dailyStatsElement.innerHTML += `<i class="fas fa-bolt me-1"></i> Avg Ampere: ${avgAmpere.toFixed(2)} A<br>`;
+    dailyStatsElement.innerHTML += `<i class="fas fa-bolt me-1"></i> Avg Voltage: ${avgVoltage.toFixed(2)} VDC`;
 
-            // Debugging - Add console logs here:
-            console.log('totalGeneratedToday:', totalGeneratedToday);
-            console.log('totalInverterOutputToday:', totalInverterOutputToday);
-            console.log('numReadings:', numReadings);
-            console.log('avgInverterOutput:', avgInverterOutput);
-        }
+        // Debugging - Add console logs here:
+        console.log('totalGeneratedToday:', totalGeneratedToday);
+        console.log('totalInverterOutputToday:', totalInverterOutputToday);
+        console.log('numReadings:', numReadings);
+        console.log('avgInverterOutput:', avgInverterOutput);
+    }
 
     let hourlyChart;
-    function updateChart() {
+   function updateChart() {
         const ctx = document.getElementById('hourly-chart').getContext('2d');
 
         if (hourlyChart) {
@@ -218,11 +240,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return itemDate >= today && itemDate <= now;
         });
 
-         const labels = chartData.map(item => {
+        const labels = chartData.map(item => {
             const itemDate = new Date(item.timestamp);
             const hour = String(itemDate.getHours()).padStart(2, '0');
             const minute = String(itemDate.getMinutes()).padStart(2, '0');
-            return `${hour}:${minute}`; // Display hour and minute
+            return `${hour}:${minute}`;
         });
 
         hourlyChart = new Chart(ctx, {
@@ -242,7 +264,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     borderColor: 'rgba(255, 99, 132, 1)',
                     backgroundColor: 'rgba(255, 99, 132, 0.2)',
                     fill: false
-                }]
+                }
+              ]
             },
             options: {
                 scales: {
@@ -269,24 +292,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function checkNewHour() {
-        const now = new Date();
-        const newHour = now.getHours();
-        const newMinute = now.getMinutes();
+        let now = new Date();
+        let newHour = now.getHours();
+        let newMinute = now.getMinutes();
 
-        if (newMinute % 30 === 0 && newMinute !== currentMinute) { // Check if new 30-minute interval
+        if (newHour !== currentHour || newMinute !== currentMinute) {
             updateHourlyData();
             updateDailyStats();
             currentHour = newHour;
             currentMinute = newMinute;
-
         }
     }
 
-    createInitialHourlyData();
+    createInitialHourlyData()
     updateChart();
-    updateDailyStats();
+    updateDailyStats()
 
     setInterval(updateDisplay, 5000);
+
     setInterval(checkNewHour, 60000);
 
     document.getElementById('theme-toggle').addEventListener('click', function(e) {
@@ -303,4 +326,9 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('darkMode', 'enabled');
         }
     });
+
+     // Initial calls
+    setInterval(updateDisplay, 5000); // Update every 5 seconds
+    setInterval(updateHourlyData, 30 * 60 * 1000); // Update every 30 minutes (Chart + localStorage)
+    setInterval(updateDailyStats,  60 * 1000);
 });
